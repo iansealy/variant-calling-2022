@@ -11,6 +11,8 @@ Below are some specific reading suggestions, but in general the topics you'll wa
 
 If there are some papers you can't access then please let us know.
 
+Some of the suggestions below aren't references you'd want to cite in your thesis (e.g. Wikipedia articles), but they dp provide useful background.
+
 ## Zebrafish
 
 - [What are model organisms?](https://www.yourgenome.org/facts/what-are-model-organisms)
