@@ -91,3 +91,31 @@ ERS018147       mrf0127 ftp.sra.ebi.ac.uk/vol1/fastq/ERR034/ERR034826/ERR034826_
 This applies even if there's more than one accession
 
 Which means that the unique ID that should be used for each sample should be the name, rather than the accession
+
+Add strain and library (if relevant) to samples:
+
+```
+awk '{ if ($2 ~ /MR|mrf|sa0/) { print $0 "\tTL\tSL2" }
+else if ($2 ~ /SL3/) { print $0 "\tSAT\tSL3" }
+else if ($2 ~ /2011|SL4/) { print $0 "\tTL\tSL4" }
+else if ($2 ~ /SL6/) { print $0 "\tTL\t$SL6" }
+else if ($2 ~ /SL7/) { print $0 "\tTL\tSL7" }
+else if ($2 ~ /SAT/) { print $0 "\tSAT\t-" }
+else if ($2 ~ /WIK/) { print $0 "\tWIK\t-" }
+else if ($2 ~ /AB/) { print $0 "\tAB\t-" }
+else if ($2 ~ /Tu/) { print $0 "\tTU\t-" }
+else if ($2 ~ /T_LF/) { print $0 "\tTL\t-" }
+else if ($2 ~ /H_LF/) { print $0 "\tHLF\t-" }
+else if ($2 ~ /Lon/) { print $0 "\tLON\t-" }
+else { print $0 } }' samples.tsv \
+> samples-all-metadata.tsv
+```
+
+If library is "-" then sample is wild type and not from ZMP and will not contain any induced mutations
+
+Make files of samples and sequencing units:
+
+```
+cut -f 2-4 samples-all-metadata.tsv | sort > units.tsv
+cut -f 2,5,6 samples-all-metadata.tsv | sort -u > samples.tsv
+```
