@@ -1,0 +1,107 @@
+CHUNKSIZE=7000000*4 # 7 million reads per chunk
+GENOME="/data/SBBS-BuschLab/genomes/GRCz11/GRCz11.fa"
+
+import pandas
+
+samples = pandas.read_table("samples.tsv").set_index("sample", drop=False).head()
+units = pandas.read_table("units.tsv").set_index(["sample"], drop=False)
+
+rule all:
+    input:
+        expand("{sample}/{sample}.bam", sample=samples["sample"])
+
+rule download_merge_fastq:
+    priority: 1
+    output:
+        fq1="{sample}/1.fastq",
+        fq2="{sample}/2.fastq"
+    log:
+        "{sample}/download_merge_fastq.log"
+    params:
+        fqs=lambda wildcards: " ".join(units.loc[wildcards.sample][["urls", "md5s"]].aggregate(":".join, axis=1).values)
+    shell:
+        "scripts/download_merge_fastq.sh {output.fq1} {output.fq2} '{params.fqs}' &> {log}"
+
+checkpoint split_fastq:
+    priority: 2
+    input:
+        fq1="{sample}/1.fastq",
+        fq2="{sample}/2.fastq"
+    output:
+        directory("{sample}/chunks")
+    log:
+        "{sample}/split_fastq.log"
+    params:
+        chunksize=CHUNKSIZE
+    shell:
+        "(mkdir {wildcards.sample}/chunks; "
+        "split --suffix-length=3 --additional-suffix=.fastq --numeric-suffixes --lines={params.chunksize} {input.fq1} {wildcards.sample}/chunks/1.; "
+        "split --suffix-length=3 --additional-suffix=.fastq --numeric-suffixes --lines={params.chunksize} {input.fq2} {wildcards.sample}/chunks/2.) "
+        "&> {log}"
+
+rule bwa_aln_1:
+    priority: 3
+    envmodules:
+        "BWA/0.7.17"
+    input:
+        "{sample}/chunks/1.{chunk}.fastq"
+    output:
+        "{sample}/chunks/1.{chunk}.sai"
+    log:
+        "{sample}/chunks/bwa_aln_1.{chunk}.log"
+    params:
+        genome=GENOME
+    shell:
+        "bwa aln {params.genome} {input} > {output} 2> {log}"
+
+rule bwa_aln_2:
+    priority: 3
+    envmodules:
+        "BWA/0.7.17"
+    input:
+        "{sample}/chunks/2.{chunk}.fastq"
+    output:
+        "{sample}/chunks/2.{chunk}.sai"
+    log:
+        "{sample}/chunks/bwa_aln_2.{chunk}.log"
+    params:
+        genome=GENOME
+    shell:
+        "bwa aln {params.genome} {input} > {output} 2> {log}"
+
+rule bwa_sampe:
+    priority: 4
+    envmodules:
+        "BWA/0.7.17",
+        "samtools/1.15.1"
+    input:
+        fq1="{sample}/chunks/1.{chunk}.fastq",
+        fq2="{sample}/chunks/2.{chunk}.fastq",
+        sai1="{sample}/chunks/1.{chunk}.sai",
+        sai2="{sample}/chunks/2.{chunk}.sai"
+    output:
+        "{sample}/chunks/{chunk}.bam"
+    log:
+        "{sample}/chunks/bwa_sampe.{chunk}.log"
+    params:
+        genome=GENOME
+    shell:
+        "(bwa sampe {params.genome} {input.sai1} {input.sai2} {input.fq1} {input.fq2} "
+        "| samtools view -bT {params.genome} -o {output} -) 2> {log}"
+
+def get_chunks(wildcards):
+    checkpoint_output = checkpoints.split_fastq.get(**wildcards).output[0]
+    return expand("{sample}/chunks/{chunk}.bam", sample=wildcards.sample, chunk=glob_wildcards(os.path.join(checkpoint_output, "1.{chunk}.fastq")).chunk)
+
+rule merge_chunks:
+    priority: 5
+    envmodules:
+        "samtools/1.15.1"
+    input:
+        get_chunks
+    output:
+        "{sample}/{sample}.bam"
+    log:
+        "{sample}/merge_chunks.log"
+    shell:
+        "samtools merge -o {output} {input} &> {log}"
