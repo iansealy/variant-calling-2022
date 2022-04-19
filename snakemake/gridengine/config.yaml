@@ -1,0 +1,4 @@
+cluster: "qsub -v PYTHONPATH -cwd -pe smp {resources.cpus} -l h_rt={resources.runtime}:0:0 -l h_vmem={resources.mem}G -o 'logs/{rule}-$JOB_ID.o' -e 'logs/{rule}-$JOB_ID.e'"
+jobs: 100
+default-resources: [cpus=1, runtime=1, mem=1]
+resources: [cpus=1000, mem=100000]

@@ -10,4 +10,4 @@ module purge
 module load Snakemake/7.3.1
 module load pandas/1.4.2
 
-snakemake --use-envmodules --cores 1
+snakemake --use-envmodules --profile gridengine

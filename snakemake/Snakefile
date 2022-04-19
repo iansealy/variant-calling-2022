@@ -49,6 +49,8 @@ rule bwa_aln_1:
         "{sample}/chunks/1.{chunk}.sai"
     log:
         "{sample}/chunks/bwa_aln_1.{chunk}.log"
+    resources:
+        mem=3
     params:
         genome=GENOME
     shell:
@@ -64,6 +66,8 @@ rule bwa_aln_2:
         "{sample}/chunks/2.{chunk}.sai"
     log:
         "{sample}/chunks/bwa_aln_2.{chunk}.log"
+    resources:
+        mem=3
     params:
         genome=GENOME
     shell:
@@ -83,6 +87,8 @@ rule bwa_sampe:
         "{sample}/chunks/{chunk}.bam"
     log:
         "{sample}/chunks/bwa_sampe.{chunk}.log"
+    resources:
+        mem=5
     params:
         genome=GENOME
     shell:
