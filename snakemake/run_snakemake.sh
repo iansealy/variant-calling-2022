@@ -2,7 +2,7 @@
 #$ -cwd
 #$ -pe smp 1
 #$ -l h_rt=240:0:0
-#$ -l h_vmem=10G
+#$ -l h_vmem=1G
 #$ -o run_snakemake.o
 #$ -e run_snakemake.e
 
