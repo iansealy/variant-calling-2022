@@ -14,8 +14,10 @@ if [ $status -eq 0 ]; then
   exit 0
 fi
 
-status=`grep -F :$job:sge /opt/sge/default/common/accounting | cut -d\: -f13`
-if [ $status -eq 0 ]; then
+status=`grep -m 1 -F :$job:sge /opt/sge/default/common/accounting | cut -d\: -f13`
+if [ -z $status ]; then
+  echo "running"
+elif [ $status -eq 0 ]; then
   echo "success"
 else
   echo "failed"
